@@ -22,7 +22,7 @@ Add dependecy: \[spring-rabbit-clojure "0.1.0"]
                   :port 5762
                   :vhost "/"
                   :username "guest"
-                  :password "guest
+                  :password "guest"
                   :publisher-confirms false
                   :request-heartbeat 10})
 ```
