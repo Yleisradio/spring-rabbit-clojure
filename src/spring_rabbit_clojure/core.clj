@@ -1,7 +1,8 @@
 (ns spring-rabbit-clojure.core
   (:require [clojure.tools.logging :refer [debug info]]
             [cheshire.core :as json]
-            [clojure.walk :refer [keywordize-keys]])
+            [clojure.walk :refer [keywordize-keys]]
+            [spring-rabbit-clojure.util :refer [body->string headers->map]])
   (:import (org.springframework.amqp.rabbit.core RabbitTemplate ChannelAwareMessageListener RabbitAdmin)
            (org.springframework.amqp.rabbit.connection CachingConnectionFactory)
            (org.springframework.amqp.rabbit.listener SimpleMessageListenerContainer)
@@ -13,18 +14,20 @@
 (def admin (atom nil))
 (def consumers (atom ()))
 
-(defn startup! [{:keys [hosts port vhost username password publisher-confirms] :as opts}]
+(defn startup! [{:keys [hosts port vhost username password publisher-confirms request-heartbeat] :as opts}]
   (let [hosts (or hosts "localhost")
         port (or port 5762)
         vhost (or vhost "/")
         username (or username "guest")
         password (or password "guest")
         publisher-confirms (or publisher-confirms false)
+        request-heartbeat (or request-heartbeat 10)
         cf (doto (CachingConnectionFactory. hosts port)
              (.setVirtualHost vhost)
              (.setUsername username)
              (.setPassword password)
-             (.setPublisherConfirms publisher-confirms))
+             (.setPublisherConfirms publisher-confirms)
+             (.setRequestedHeartBeat request-heartbeat))
         rabbit-template (RabbitTemplate. cf)
         rabbit-admin (RabbitAdmin. cf)]
     (swap! connection (fn [x] cf))
@@ -41,22 +44,10 @@
         message (Message. body-bytes message-properties)]
     (.send @rabbit exchange routing-key message)))
 
-(defn- header->map [message]
-  (->> message
-       .getMessageProperties
-       .getHeaders
-       (into {})
-       keywordize-keys))
-
-(defn- body->string [message]
-  (-> message
-      (.getBody)
-      (String.)))
-
 (defn consumer [handler-fn]
   (fn [msg channel]
     (let [delivery-tag (-> msg .getMessageProperties .getDeliveryTag)
-          headers (header->map msg)
+          headers (headers->map msg)
           body (body->string msg)]
       (if (handler-fn headers body)
         (.basicAck channel delivery-tag false)
@@ -80,7 +71,7 @@
 (defn consume-all-from-queue! [queue messages timeout]
   (let [msg (.receive @rabbit queue timeout)]
     (if msg
-      (let [headers (header->map msg)
+      (let [headers (headers->map msg)
             body (body->string msg)]
         (swap! messages conj [headers (json/parse-string body true)])
         (recur queue messages timeout))
