@@ -2,11 +2,7 @@
 
 A simple wrapper for Spring AMQP Rabbit. Hides the complexity of the Spring setup.
 
-## Installation
-
-    git clone git@github.com:Yleisradio/spring-rabbit-clojure.git.
-    
-    lein install
+[![Clojars Project](https://img.shields.io/clojars/v/spring-rabbit-clojure.svg)](https://clojars.org/spring-rabbit-clojure)
 
 ## Usage
 
