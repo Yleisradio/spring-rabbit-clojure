@@ -14,6 +14,12 @@ Add dependecy: \[spring-rabbit-clojure "0.1.0"]
 
 ## Examples
 
+#### Require
+
+```clojure
+(:require [spring-rabbit-clojure.core :as rabbit])
+```
+
 #### Startup
 
 ```clojure
@@ -66,6 +72,10 @@ Add dependecy: \[spring-rabbit-clojure "0.1.0"]
 (rabbit/declare-binding! queue-name exchange-name routing-key)
 ```
 
+#### Purge queue
+```clojure
+(rabbit/purge! queue-name)
+```
 
 ## License
 
