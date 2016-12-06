@@ -37,7 +37,11 @@
 (defn consumer [handler-fn]
   (fn [msg channel]
     (let [delivery-tag (-> msg .getMessageProperties .getDeliveryTag)
-          headers (-> msg .getMessageProperties .getHeaders)
+          headers (->> msg
+                       .getMessageProperties
+                       .getHeaders
+                       (into {})
+                       keywordize-keys)
           body (String. (.getBody msg))]
       (if (handler-fn headers body)
         (.basicAck channel delivery-tag false)
@@ -45,9 +49,7 @@
 
 (defn json-handler [handler-fn]
   (fn [headers body]
-    (let [msg (json/parse-string body true)
-          headers (-> (into {} headers)
-                      keywordize-keys)]
+    (let [msg (json/parse-string body true)]
       (handler-fn headers msg))))
 
 (defn consume! [queue handler-fn]
